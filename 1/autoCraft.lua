@@ -136,11 +136,20 @@ local function addCraftM()
     write("В крафте используется житкость? y/n: ")
     local fluidFlag = read()
     local fluidCount = 0
-
+    local fluidStorage = {}
+    local fluidRecipe = {}
 
     if fluidFlag == "y" then
-        write("количесво житкости? y/n: ")
-        fluidCount = read()
+        local fluids = FluidPump.getInfoHomeStorage()
+        for i, fluid in ipairs(fluids) do
+            
+            print(fluid.name)
+            write("Количесво житкости? ")
+            fluidCount = tonumber(read())
+            fluidStorage[i] = fluid.storage
+            fluidRecipe[i] = {name = fluid.tag, count = fluidCount}
+            
+        end
     end
     
     if recipeName == "" then
@@ -149,16 +158,25 @@ local function addCraftM()
     end
 
     term.redirect(monitor)
-    local recipe = {}
+    local recipe = {items = {}, fluids = {}}
 
     for i, storageSlot in ipairs(slots) do
         local item = buferS.getItemDetail(storageSlot)
         
         if item then
-            recipe[i] = {name = item.name,  count = item.count}
+            recipe.items[i] = {name = item.name,  count = item.count}
             buferS.pushItems(P, storageSlot, nil, i)
         end
     end
+
+    for i, fluids in ipairs(fluidRecipe) do
+        
+        recipe.fluids[i] = {name = fluids.name,  count = fluids.count}
+  
+        fluidStorage[i].pushFluid(P, fluids.count)
+
+    end
+
     sleep(0.2)
     local Pa = peripheral.wrap(P)
     while Pa.getProgress() > 0 do
@@ -166,10 +184,15 @@ local function addCraftM()
         local maxProgress = Pa.getMaxProgress()
 
         print("Прогресс: " .. progress .. "/" .. maxProgress)
-        sleep(0.5)
+        sleep(0.1)
     end
-    buferS.pullItems(P, 1, nil, 14)
-    
+    sleep(0.2)
+    local items = Pa.list()
+    for slot, item in pairs(items) do
+        local moved = buferS.pullItems(P, slot, nil, 14) 
+        print("Перемещено: " .. moved)
+    end
+
     local res = buferS.getItemDetail(14)
     if res then tag = res.name end
 
@@ -294,7 +317,7 @@ local function CraftV(recipe)
         end
 
     elseif section == "Для машинок" then
-        for craftSlot, itemName in pairs(recipe) do
+        for craftSlot, itemName in pairs(recipe.items) do
             local found = false
             
             for _, storage in ipairs(storageInfo) do
@@ -313,6 +336,11 @@ local function CraftV(recipe)
 
             if not found then print("Не найден предмет: " .. itemName.name) return end
         end
+
+        for _, fluids in pairs(recipe.fluids) do
+            FluidPump.pullFluidInMachine(fluids.name, fluids.count, P)
+        end
+
         sleep(0.2)
         local Pa = peripheral.wrap(P)
         while Pa.getProgress() > 0 do
@@ -324,7 +352,7 @@ local function CraftV(recipe)
         end
         local items = Pa.list()
         for slot, item in pairs(items) do
-            local moved = buferS.pullItems(P, slot, nil, 13) 
+            local moved = buferS.pullItems(P, slot, nil, 14) 
             print("Перемещено: " .. moved)
         end
     end

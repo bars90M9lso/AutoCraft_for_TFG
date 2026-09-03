@@ -110,27 +110,32 @@ local function getInfoStorage()
     end
 end
 
-local function getInfoHomeStorage()
+function M.getInfoHomeStorage()
     updateHomeTanks()
     local fluids = {}
 
     for i, tank in ipairs(FluidTanks.home) do
         if not tank.empty then
-            fluids = tank.fluids        
+            table.insert(fluids, {name = tank.fluids, tag = tank.fluidsId, storage = tank.object})
+        end       
     end
+
+    return fluids
 end
 
-local function pullFluidInMachine(fluidRecipe, machineName) 
+function M.pullFluidInMachine(fluidRecipe, count, machineName) 
     updateStorageTanks()
 
     for _, storageTank in ipairs(FluidTanks.storage) do
-        if fluidRecipe == storageTank.fluids then
-            storageTank.object.pushFluid(machineName)
+        if fluidRecipe == storageTank.fluidsId then
+            storageTank.object.pushFluid(machineName, count)
             updateStorageTanks()
-            return
+            return true
         end
     end
-    print("Нет такой жидкости")
+    
+    print("Нет такой жидкости: " .. fluidRecipe)
+    return false
 end
 
 local function pushFluidFromMachine(fluidRes, machineName)
@@ -248,6 +253,8 @@ monitor.setCursorPos(40, 10)
 monitor.write("[ pull ]")
 monitor.setCursorPos(1, 1)
 
+
+--[[
 while true do
     
     local event, side, x, y = os.pullEvent("monitor_touch")
@@ -271,3 +278,5 @@ while true do
         print("Готово!")
     end
 end
+]]
+return M
