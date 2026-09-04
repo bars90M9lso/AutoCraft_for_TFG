@@ -14,7 +14,9 @@ for i, method in ipairs(methods) do
 end
 ]]
 local FluidPump = require("FluidPump")
-local monitor = peripheral.wrap("left")
+local ItemСonveyor = require("ItemСonveyor")
+
+local monitor = peripheral.wrap("monitor_0")
 local recipeFile = "recipes"
 
 local buferS = peripheral.wrap("gtceu:wood_crate_0")
@@ -114,19 +116,13 @@ local function loadRecipes()
     return recipes or {}
 end
 
-local function sizeStorage()
-    for _, size in ipairs(storageInfo) do
-        print(size.freeSize)
-    end
-end
-
 local function addCraftM()
     local slots = {
                    4,  5,   6,
                    13, 14, 15, 
                    22, 23, 24
                   }
-    local P = "gtceu:lv_assembler_0"
+    local P = "gtceu:mv_chemical_reactor_1"
     local tag = nil
 
     term.redirect(term.native())
@@ -258,7 +254,7 @@ local function addCraftV()
     end
 end
 
-local function CraftV(recipe)
+local function CraftRes(recipe)
     local craftSlotsV = 
     {
         2, 3, 4,
@@ -272,7 +268,7 @@ local function CraftV(recipe)
         7, 8, 9
     }
     local turtleP = "turtle_0"
-    local P = "gtceu:lv_assembler_0"
+    local P = "gtceu:mv_chemical_reactor_1"
 
     local section = recipe.section
     local recipeName = recipe.data.name
@@ -318,7 +314,7 @@ local function CraftV(recipe)
 
     elseif section == "Для машинок" then
         for craftSlot, itemName in pairs(recipe.items) do
-            local found = false
+            local found = false 
             
             for _, storage in ipairs(storageInfo) do
                 local items = storage.object.list()
@@ -353,8 +349,14 @@ local function CraftV(recipe)
         local items = Pa.list()
         for slot, item in pairs(items) do
             local moved = buferS.pullItems(P, slot, nil, 14) 
-            print("Перемещено: " .. moved)
         end
+        local tanks = Pa.tanks()
+
+        for i, tank in pairs(tanks) do
+            print(tank.name) 
+            FluidPump.pushFluidFromMachine(tank.name, Pa)
+        end
+        sleep(5)
     end
 end
 
@@ -413,9 +415,6 @@ local function drawMenu()
     monitor.setCursorPos(40, 1)
     monitor.write("[ addCraftV ]")
 
-    monitor.setCursorPos(40, 5)
-    monitor.write("[ sizeS ]")
-
     monitor.setCursorPos(40, 10)
     monitor.write("[ craftM ]")
 
@@ -439,7 +438,7 @@ while true do
         monitor.setCursorPos(1, 1)
         monitor.write("Крафт: " .. selectedRecipe.name)
 
-        CraftV(selectedRecipe)
+        CraftRes(selectedRecipe)
 
         sleep(1)
 
@@ -451,19 +450,6 @@ while true do
         monitor.clear()
 
         addCraftV()
-
-        print("Готово!")
-
-        sleep(1)
-
-        drawMenu()
-    end
-
-    -- sizeStorage
-    if x >= 40 and x <= 52 and y >= 5 and y <= 8 then
-        monitor.clear()
-
-        sizeStorage()
 
         print("Готово!")
 

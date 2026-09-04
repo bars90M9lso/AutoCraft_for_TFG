@@ -138,7 +138,7 @@ function M.pullFluidInMachine(fluidRecipe, count, machineName)
     return false
 end
 
-local function pushFluidFromMachine(fluidRes, machineName)
+function M.pushFluidFromMachine(fluidRes, machineName)
     updateStorageTanks()
 
     local targetTank = nil
