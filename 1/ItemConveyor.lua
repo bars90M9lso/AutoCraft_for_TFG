@@ -46,6 +46,7 @@ local function getInitialInfo()
         }) 
     end
 end
+getInitialInfo()
 
 local function sizeStorage()
     for _, size in ipairs(storageInfo) do
@@ -53,14 +54,9 @@ local function sizeStorage()
     end
 end
 
-local function pushItemFromStorage(machineName, recipe)
-    local section = recipe.section
-    local recipeName = recipe.data.name
-    local recipe = recipe.data.recipe
-
-    for i, itemName in pairs(recipe) do
-        local found = false
-            
+function M.pushItemFromStorage(machineName, recipeItems)
+    for i, itemName in pairs(recipeItems) do 
+        local found = false           
         for _, storage in ipairs(storageInfo) do
             local items = storage.object.list()
                 
@@ -77,24 +73,37 @@ local function pushItemFromStorage(machineName, recipe)
     end
 end
 
-local function pullItemInStorage()
-    for _, slot in ipairs(craftSlotsTurtle) do
-        for _, storage in ipairs(storageInfo) do
-            local moved = storage.object.pullItems(turtleP, slot, nil)
-                
-            if moved > 0 then
-                break
+function M.pullItemInStorage(section, machineName)
+    if section == "Для черепашки" then
+        for _, slot in ipairs(craftSlotsTurtle) do
+            for _, storage in ipairs(storageInfo) do
+                local moved = storage.object.pullItems(machineName, slot, nil)
+                if moved > 0 then break end
+            end    
+        end
+    else
+        local Pa = peripheral.wrap(machineName)
+        local items = Pa.list()
+
+        for slot, item in pairs(items) do
+            for _, storage in ipairs(storageInfo) do
+                local moved = storage.object.pullItems(machineName, slot, nil)
+
+                if moved > 0 then
+                    break
+                end
             end
-        end    
+        end
     end
 end
 
-local function pushItemFromBufer(machineName)
+function M.pushItemFromBufer(section, machineName)
+    
     for i, storageSlot in ipairs(buferSlots) do
         local item = buferS.getItemDetail(storageSlot)
         
         if item then
-            if machineName
+            if section == "Для черепашки" then
                 buferS.pushItems(machineName, storageSlot, nil, craftSlotsTurtle[i])
             else
                 buferS.pushItems(machineName, storageSlot, nil, i)
@@ -103,11 +112,17 @@ local function pushItemFromBufer(machineName)
     end
 end
 
-local function pullItemInBufer(machineName, resItem)
-    local items = machineName.list()
-    
-    for slot, item in pairs(items) do
-        local moved = buferS.pullItems(machineName, slot, nil, 14) 
+function M.pullItemInBufer(section, machineName)
+    if section == "Для черепашки" then
+        buferS.pullItems(machineName, 1, nil, 14) 
+        return
+    else
+        local Pa = peripheral.wrap(machineName)
+        local items = Pa.list()
+        for slot, item in pairs(items) do
+            buferS.pullItems(machineName, slot, nil, 14) 
+        end
+        return
     end
 end
 

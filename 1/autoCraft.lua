@@ -14,9 +14,9 @@ for i, method in ipairs(methods) do
 end
 ]]
 local FluidPump = require("FluidPump")
-local ItemСonveyor = require("ItemСonveyor")
+local ItemConveyor = require("ItemConveyor")
 
-local monitor = peripheral.wrap("monitor_0")
+local monitor = peripheral.wrap("left")
 local recipeFile = "recipes"
 
 local buferS = peripheral.wrap("gtceu:wood_crate_0")
@@ -116,87 +116,7 @@ local function loadRecipes()
     return recipes or {}
 end
 
-local function addCraftM()
-    local slots = {
-                   4,  5,   6,
-                   13, 14, 15, 
-                   22, 23, 24
-                  }
-    local P = "gtceu:mv_chemical_reactor_1"
-    local tag = nil
-
-    term.redirect(term.native())
-    write("Название результата: ")
-    local recipeName = read()
-
-    write("В крафте используется житкость? y/n: ")
-    local fluidFlag = read()
-    local fluidCount = 0
-    local fluidStorage = {}
-    local fluidRecipe = {}
-
-    if fluidFlag == "y" then
-        local fluids = FluidPump.getInfoHomeStorage()
-        for i, fluid in ipairs(fluids) do
-            
-            print(fluid.name)
-            write("Количесво житкости? ")
-            fluidCount = tonumber(read())
-            fluidStorage[i] = fluid.storage
-            fluidRecipe[i] = {name = fluid.tag, count = fluidCount}
-            
-        end
-    end
-    
-    if recipeName == "" then
-        print("Название не введено")
-        return
-    end
-
-    term.redirect(monitor)
-    local recipe = {items = {}, fluids = {}}
-
-    for i, storageSlot in ipairs(slots) do
-        local item = buferS.getItemDetail(storageSlot)
-        
-        if item then
-            recipe.items[i] = {name = item.name,  count = item.count}
-            buferS.pushItems(P, storageSlot, nil, i)
-        end
-    end
-
-    for i, fluids in ipairs(fluidRecipe) do
-        
-        recipe.fluids[i] = {name = fluids.name,  count = fluids.count}
-  
-        fluidStorage[i].pushFluid(P, fluids.count)
-
-    end
-
-    sleep(0.2)
-    local Pa = peripheral.wrap(P)
-    while Pa.getProgress() > 0 do
-        local progress = Pa.getProgress()
-        local maxProgress = Pa.getMaxProgress()
-
-        print("Прогресс: " .. progress .. "/" .. maxProgress)
-        sleep(0.1)
-    end
-    sleep(0.2)
-    local items = Pa.list()
-    for slot, item in pairs(items) do
-        local moved = buferS.pullItems(P, slot, nil, 14) 
-        print("Перемещено: " .. moved)
-    end
-
-    local res = buferS.getItemDetail(14)
-    if res then tag = res.name end
-
-    saveRecipe("Для машинок", recipeName, tag, recipe)
-    print("Рецепт сохранён: " .. recipeName)
-end
-
-local function addCraftV()
+local function preliminarySavingRecipe(section)
     local slots = {
                    4,  5,   6,
                    13, 14, 15, 
@@ -207,12 +127,109 @@ local function addCraftV()
                         6, 7, 8,
                         10, 11, 12
                        }
-    local turtleP = "turtle_0"
     local recipe = {}
+    if section == "Для машинок" then
+        recipe = {items = {}, fluids = {}}
+    end
+
+    for i, storageSlot in ipairs(slots) do
+        local item = buferS.getItemDetail(storageSlot)
+        
+        if item then
+            if section == "Для черепашки" then
+                recipe[craftSlots[i]] = {name = item.name,  count = item.count}
+            else
+                recipe.items[i] = {name = item.name,  count = item.count}
+            end
+        end
+    end
+    return recipe
+end
+
+local function addCraftM()
+
+    local P = "gtceu:mv_chemical_reactor_1"
     local tag = nil
 
+    print("Положите рецепт и назовите рецепта: ")
     term.redirect(term.native())
-    write("Название результата: ")
+    local recipeName = read()
+    
+    if recipeName == "" then
+        print("Название не введено")
+        return
+    end
+
+    print("В крафте используется житкость? y/n: ")
+    local fluidFlag = read()
+    local fluidCount = 0
+    local fluidStorage = {}
+    local fluidRecipe = {}
+
+    if fluidFlag == "y" then
+        local fluids = FluidPump.getInfoHomeStorage()
+        for i, fluid in ipairs(fluids) do
+            print(fluid.name)
+            print("Количесво житкости? ")
+            fluidCount = tonumber(read())
+            fluidStorage[i] = fluid.storage
+            fluidRecipe[i] = {name = fluid.tag, count = fluidCount}
+        end
+    end
+    
+    term.redirect(monitor)
+    local recipe = preliminarySavingRecipe("Для машинок")
+
+    ItemConveyor.pushItemFromBufer("Для машинок", P)
+    if fluidFlag == "y" then
+        for i, fluids in ipairs(fluidRecipe) do
+            recipe.fluids[i] = {name = fluids.name,  count = fluids.count}
+            fluidStorage[i].pushFluid(P, fluids.count)
+        end
+    end
+
+    sleep(0.1)
+    local Pa = peripheral.wrap(P)
+    while Pa.getProgress() > 0 do
+        local progress = Pa.getProgress()
+        local maxProgress = Pa.getMaxProgress()
+
+        print("Прогресс: " .. progress .. "/" .. maxProgress)
+        sleep(0.1)
+    end
+    sleep(0.1)
+
+    ItemConveyor.pullItemInBufer("Для машинок", P)
+    ItemConveyor.pullItemInStorage("Для машинок", P)
+    if fluidFlag == "y" then
+        local tanks = Pa.tanks()
+
+        for i, tank in pairs(tanks) do
+            print(tank.name) 
+            FluidPump.pushFluidFromMachine(tank.name, Pa)
+        end
+    end
+
+    local res = buferS.getItemDetail(14)
+    if res then res = res.name end
+    
+    print("Сохранить рецепт? (y/n)")
+    term.redirect(term.native())
+    local isSave = read()
+    term.redirect(monitor)
+
+    if isSave == "y" then
+        saveRecipe("Для машинок", recipeName, res, recipe)
+        print("Рецепт сохранён: " .. recipeName)
+    else
+        return
+    end
+end
+
+local function addCraftV()
+    
+    print("Положите рецепт и назовите рецепта: ")
+    term.redirect(term.native())
     local recipeName = read()
     term.redirect(monitor)
 
@@ -221,123 +238,64 @@ local function addCraftV()
         return
     end
 
-    for i, storageSlot in ipairs(slots) do
-        local item = buferS.getItemDetail(storageSlot)
-        
-        if item then
-            recipe[craftSlots[i]] = {name = item.name,  count = item.count}
-            buferS.pushItems(turtleP, storageSlot, nil, craftSlots[i])
-        end
-    end
+    local recipe = preliminarySavingRecipe("Для черепашки")
+    ItemConveyor.pushItemFromBufer("Для черепашки", "turtle_0")
 
-    rednet.send(idTurtl, "AddCraft")
+    rednet.send(idTurtl, "craft")
     local senderID, command = rednet.receive()
     
     if command == "Done" then
+        local section = recipe.section
 
-        for _, slot in ipairs(craftSlots) do
-            for _, storage in ipairs(storageInfo) do
-                local moved = storage.object.pullItems(turtleP, slot, nil)
-                
-                if moved > 0 then
-                    break
-                end
-            end
-            
-        end
+        ItemConveyor.pullItemInStorage("Для черепашки", "turtle_0")
+        ItemConveyor.pullItemInBufer("Для черепашки", "turtle_0")
 
         local res = buferS.getItemDetail(14)
-        if res then tag = res.name end
+        if res then res = res.name end
 
-        saveRecipe("Для черепашки", recipeName, tag, recipe)
-        print("Рецепт сохранён: " .. recipeName)
+        write("Сохранить рецепт? (y/n)")
+        term.redirect(term.native())
+        local isSave = read()
+        term.redirect(monitor)
+
+        if isSave == "y" then
+            saveRecipe("Для черепашки", recipeName, res, recipe)
+            print("Рецепт сохранён: " .. recipeName)
+        else
+            return
+        end
     end
 end
 
 local function CraftRes(recipe)
-    local craftSlotsV = 
-    {
-        2, 3, 4,
-        6, 7, 8,
-        10, 11, 12
-    }
-    local craftSlotsM = 
-    {
-        1, 2, 3,
-        4, 5, 6,
-        7, 8, 9
-    }
     local turtleP = "turtle_0"
     local P = "gtceu:mv_chemical_reactor_1"
 
     local section = recipe.section
     local recipeName = recipe.data.name
-    local recipe = recipe.data.recipe
+    local recipeItems = recipe.data.recipe.items
+    local recipeFluids = recipe.data.recipe.fluids
 
     if section == "Для черепашки" then
-        for craftSlot, itemName in pairs(recipe) do
-            local found = false
-            
-            for _, storage in ipairs(storageInfo) do
-                local items = storage.object.list()
-                
-                for storageSlot, item in pairs(items) do
-                    if item.name == itemName.name then
-                        local count = itemName.count
-                        local moved = storage.object.pushItems(turtleP, storageSlot, count, craftSlot)
-                        if moved > 0 then found = true break end
-                    end
-                end
+        ItemConveyor.pushItemFromStorage(section, turtleP, recipeItems)
 
-                if found then break end
-            end
-
-            if not found then print("Не найден предмет: " .. itemName.name) return end
-        end
-
-        rednet.send(idTurtl, "AddCraft")
+        rednet.send(idTurtl, "craft")
         local senderID, command = rednet.receive()
         
         if command == "Done" then
-
-            for _, slot in ipairs(craftSlotsV) do
-                for _, storage in ipairs(storageInfo) do
-                    local moved = storage.object.pullItems(turtleP, slot, nil)
-                    
-                    if moved > 0 then
-                        break
-                    end
-                end
-                
-            end
+            ItemConveyor.pullItemInStorage(section, turtleP)
+            ItemConveyor.pullItemInBufer(section, turtleP)
         end
 
     elseif section == "Для машинок" then
-        for craftSlot, itemName in pairs(recipe.items) do
-            local found = false 
-            
-            for _, storage in ipairs(storageInfo) do
-                local items = storage.object.list()
-                
-                for storageSlot, item in pairs(items) do
-                    if item.name == itemName.name then
-                        local count = itemName.count
-                        local moved = storage.object.pushItems(P, storageSlot, count, craftSlot)
-                        if moved > 0 then found = true break end
-                    end
-                end
-
-                if found then break end
+        ItemConveyor.pushItemFromStorage(P, recipeItems)
+        if #recipeFluids > 0 then
+            for _, fluids in pairs(recipeFluids) do
+                FluidPump.pullFluidInMachine(fluids.name, fluids.count, P)
             end
-
-            if not found then print("Не найден предмет: " .. itemName.name) return end
         end
-
-        for _, fluids in pairs(recipe.fluids) do
-            FluidPump.pullFluidInMachine(fluids.name, fluids.count, P)
-        end
-
-        sleep(0.2)
+        
+        sleep(0.1)
         local Pa = peripheral.wrap(P)
         while Pa.getProgress() > 0 do
             local progress = Pa.getProgress()
@@ -346,17 +304,17 @@ local function CraftRes(recipe)
             print("Прогресс: " .. progress .. "/" .. maxProgress)
             sleep(0.1)
         end
-        local items = Pa.list()
-        for slot, item in pairs(items) do
-            local moved = buferS.pullItems(P, slot, nil, 14) 
-        end
-        local tanks = Pa.tanks()
 
-        for i, tank in pairs(tanks) do
-            print(tank.name) 
-            FluidPump.pushFluidFromMachine(tank.name, Pa)
+        ItemConveyor.pullItemInBufer("Для машинок", P)
+        ItemConveyor.pullItemInStorage("Для машинок", P)
+        if #recipeFluids > 0 then
+            local tanks = Pa.tanks()
+
+            for i, tank in pairs(tanks) do
+                print(tank.name) 
+                FluidPump.pushFluidFromMachine(tank.name, Pa)
+            end
         end
-        sleep(5)
     end
 end
 
