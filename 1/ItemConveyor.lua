@@ -34,7 +34,7 @@ local craftSlotsMachine =
 
 local storageInfo = { }
 
-local function getInitialInfo()
+function M.getInitialInfo()
     storageInfo = { }
 
     for _, name in ipairs(storage) do
@@ -46,7 +46,6 @@ local function getInitialInfo()
         }) 
     end
 end
-getInitialInfo()
 
 local function sizeStorage()
     for _, size in ipairs(storageInfo) do
@@ -83,14 +82,16 @@ function M.pullItemInStorage(section, machineName)
         end
     else
         local Pa = peripheral.wrap(machineName)
-        local items = Pa.list()
+        for slot = 1, Pa.size() do
+            local item = Pa.getItemDetail(slot)
 
-        for slot, item in pairs(items) do
-            for _, storage in ipairs(storageInfo) do
-                local moved = storage.object.pullItems(machineName, slot, nil)
+            if item then
+                for _, storage in ipairs(storageInfo) do
+                    local moved = storage.object.pullItems(machineName, slot, nil)
 
-                if moved > 0 then
-                    break
+                    if moved > 0 then
+                        break
+                    end
                 end
             end
         end

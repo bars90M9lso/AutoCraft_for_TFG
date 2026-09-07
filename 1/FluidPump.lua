@@ -21,7 +21,7 @@ local homeTank = {
 local FluidTanks = { }
 
 
-local function getInitialInfo()
+function M.getInitialInfo()
     FluidTanks = { home = {}, storage = {} }
     local homeNames = {}
 
@@ -241,42 +241,4 @@ local function pushFluidInStorage()
     end
 end
 
-monitor.clear()
-getInitialInfo()
-
-term.redirect(monitor)
-monitor.setCursorPos(40, 1)
-monitor.write("[ PUSH ]")
-monitor.setCursorPos(40, 5)
-monitor.write("[ info ]")
-monitor.setCursorPos(40, 10)
-monitor.write("[ pull ]")
-monitor.setCursorPos(1, 1)
-
-
---[[
-while true do
-    
-    local event, side, x, y = os.pullEvent("monitor_touch")
-
-    if x >= 40 and x <= 50 and y >= 1 and y <= 3 then
-        monitor.clear()
-        print("Запуск pushFluid...")
-        pushFluidInStorage()
-        print("Готово!")
-    end
-
-    if x >= 40 and x <= 50 and y >= 5 and y <= 8 then
-        monitor.clear()
-        getInfoStorage()
-        print("Готово!")
-    end
-
-    if x >= 40 and x <= 50 and y >= 10 and y <= 12 then
-        monitor.clear()
-        pullFluidInHome()
-        print("Готово!")
-    end
-end
-]]
 return M

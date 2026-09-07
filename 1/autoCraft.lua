@@ -21,7 +21,6 @@ local recipeFile = "recipes"
 
 local buferS = peripheral.wrap("gtceu:wood_crate_0")
 
-local turtle = peripheral.wrap("turtle_0")
 local idTurtl = 2
 rednet.open("back")
 
@@ -33,12 +32,14 @@ local storage = {
 local storageInfo = { }
 
 local blockM = { }
+local turtle = { }
 local lvM = { }
 local mvM = { }
 local hvM = { }
 
 local function getInitialInfo()
     storageInfo = { }
+    turtle = { }
     lvM = { }
     mvM = { }
     hvM = { }
@@ -53,8 +54,16 @@ local function getInitialInfo()
 
     for _, name in ipairs(peripheral.getNames()) do
         local p = peripheral.wrap(name)
+        print(name, peripheral.getType(name))
+        if p and peripheral.getType(name) == "turtle" then
+            table.insert(turtle, { 
+                                                name = name, 
+                                                object = p,
 
-        if p and peripheral.getType(name) == "gtceu:lv" then
+                                            })
+        end
+
+        if p and string.match(peripheral.getType(name), "^gtceu:lv_") then
             table.insert(lvM, { 
                                                 name = name, 
                                                 object = p,
@@ -62,7 +71,7 @@ local function getInitialInfo()
                                             })
         end
 
-        if p and peripheral.getType(name) == "gtceu:mv" then
+        if p and string.match(peripheral.getType(name), "^gtceu:mv_") then
             table.insert(mvM, { 
                                                 name = name, 
                                                 object = p,
@@ -70,7 +79,7 @@ local function getInitialInfo()
                                             })
         end
 
-        if p and peripheral.getType(name) == "gtceu:hv" then
+        if p and string.match(peripheral.getType(name), "^gtceu:hv_") then
             table.insert(hvM, { 
                                                 name = name, 
                                                 object = p,
@@ -80,7 +89,7 @@ local function getInitialInfo()
     end
 end
 
-local function saveRecipe(section, name, tag, items)
+local function saveRecipe(section, name, tag, machineName, items)
     local recipes = {}
 
     if fs.exists(recipeFile) then
@@ -150,6 +159,7 @@ local function addCraftM()
 
     local P = "gtceu:mv_chemical_reactor_1"
     local tag = nil
+    local machineName = {}
 
     print("Положите рецепт и назовите рецепта: ")
     term.redirect(term.native())
@@ -177,6 +187,29 @@ local function addCraftM()
         end
     end
     
+    print("Выбери тип машинки:")
+    print("1 - LV")
+    print("2 - MV")
+    print("3 - HV")
+
+    local choice = tonumber(read())
+
+    local machineType
+
+    if choice == 1 then
+        for i, machine  in ipairs(lvM) do
+            print(i, " ", machine.name, " ", machine.object)
+
+            --machineName = {name = name. , object = p}
+        end
+    elseif choice == 2 then
+        
+        --machineName =
+    elseif choice == 3 then
+        
+        --machineName =
+    end
+
     term.redirect(monitor)
     local recipe = preliminarySavingRecipe("Для машинок")
 
@@ -219,7 +252,7 @@ local function addCraftM()
     term.redirect(monitor)
 
     if isSave == "y" then
-        saveRecipe("Для машинок", recipeName, res, recipe)
+        saveRecipe("Для машинок", recipeName, res, machineName, recipe)
         print("Рецепт сохранён: " .. recipeName)
     else
         return
@@ -382,6 +415,8 @@ end
 term.redirect(monitor)
 local recipeButtons = drawMenu()
 getInitialInfo()
+FluidPump.getInitialInfo()
+ItemConveyor.getInitialInfo()
 
 while true do
     local event, side, x, y = os.pullEvent("monitor_touch")
